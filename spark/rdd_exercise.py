@@ -5,7 +5,7 @@ spark = SparkSession.builder.appName('RDD Exercise').getOrCreate()
 
 # Load CSV file into a data frame
 score_sheet_df = spark.read.load('/user/zzj/score-sheet.csv', \
-    format='csv', sep=';', inferSchema='true', header='true')
+            format='csv', sep=';', inferSchema='true', header='true')
 
 score_sheet_df.show()
 
