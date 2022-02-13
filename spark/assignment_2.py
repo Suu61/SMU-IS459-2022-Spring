@@ -9,7 +9,7 @@ spark = SparkSession.builder.appName('sg.edu.smu.is459.assignment2').getOrCreate
 
 # Load data
 posts_df = spark.read.load('/user/sueanne/hardwarezone.parquet')
-#posts_df.show()
+posts_df.show()
 
 # Clean the dataframe by removing rows with any null value
 posts_df = posts_df.na.drop()
@@ -28,7 +28,7 @@ author_df = posts_df.select('author').distinct()
 
 # Assign ID to the users
 author_id = author_df.withColumn('id', monotonically_increasing_id())
-#author_id.show()
+author_id.show()
 
 # Construct connection between post and author
 left_df = posts_df.select('topic', 'author') \
@@ -80,19 +80,33 @@ graph = GraphFrame(author_id, id_to_id)
 # The rest is your work, guys
 # ......
 
-#print("\nUsing label propagation to derive community links...")
-#label_propagated_df = graph.labelPropagation(100)
-#label_propagated_df.show()
+print("\nUsing label propagation to derive community links...")
+label_propagated_df = graph.labelPropagation(100)
+label_propagated_df.show()
 
-#print("How large are the communities (connected components)?")
-#distinct_communities_df = label_propagated_df.groupBy('label').count().withColumnRenamed("count", "Community Size").withColumnRenamed("label", "Community id")
+print("How large are the communities (connected components)?")
+distinct_communities_df = label_propagated_df.groupBy('label').count().withColumnRenamed("count", "Community Size").withColumnRenamed("label", "Community id")
 #distinct_communities_df.orderBy(desc("count")).show()
+(large_id, large_size) = distinct_communities_df.orderBy(desc("count")).first()
+print("1. Size of largest community: " +str(large_size))
 
 #For checking that unlinked users are indeed unlinked
 #posts_df.filter(posts_df.author == "plasmic").show()
 
-print("\nWhat are the key words of the community (frequent words)?")
+largest_members_df = label_propagated_df.filter(label_propagated_df.label == large_id).select("author")
+largest_members_df.show()
 
+#print("\nWhat are the key words of the community (frequent words)?")
+content_df = posts_df.join(largest_members_df, posts_df.author == largest_members_df.author, 'inner').select("content")
+cleaned_df = content_df.select(f.regexp_replace(posts_df.content, "[\t\n*!.\?\-\,]", "").alias('content')).select(f.lower(f.col('content')).alias('content'))
+
+split_df = cleaned_df.select(f.split(cleaned_df.content, " ", -1).alias('content'))
+explode_df = split_df.select(f.explode(split_df.content).alias('words'))
+
+explode_count_df = explode_df.groupBy('words').count().orderBy(desc('count'))
+
+print("\n 2. Most frequent words of the community:") 
+explode_count_df.show()   
 
 print("\nCalculating number of triangles passing through each vertex (author)...")
 
@@ -102,9 +116,7 @@ triangles_df.show()
 print("\nHow cohesive are the communities (Average # of triangles over every user in a community)?")
 
 total_triangles = triangles_df.agg({'count':'sum'}).first()[0]
-author_count = author_df.count() 
+largest_members_count = largest_members_df.count() 
 
-cohesiveness = total_triangles / author_count
-print("Average number of triangles over each user is", str(cohesiveness))
-#Key words of the community
-#words_df = posts_df.str_to_map()
+cohesiveness = total_triangles / largest_members_count
+print("3. Average number of triangles over each user is " +str(cohesiveness))
