@@ -13,8 +13,12 @@ For kafka_wordcount.py please note there are things to do before you run the fil
 1) To show top 10 users, please comment IN lines 72-80 (inclusive) and comment OUT lines 85-92 (inclusive)
 2) To show top 10 words, please comment IN lines 85-92 (inclusive) and comment OUT lines 72-80 (inclusive).
 
+#######################################################################################################################
+
 FOR ASSIGNMENT 2:
 The file to run is in spark/sue_rdd_exercise.py
+
+#######################################################################################################################
 
 FOR ASSIGNMENT 1:
 Assignment 1 is located in a different repository: https://github.com/Suu61/IS459-Assignment1
